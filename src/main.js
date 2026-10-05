@@ -42,6 +42,33 @@ const game = new Phaser.Game({
 ['pointerdown', 'pointerup', 'touchstart', 'touchend', 'click', 'keydown'].forEach((ev) =>
   window.addEventListener(ev, () => moodAudio.unlock(), { passive: true, capture: true })
 );
+// Safari iOS (paysage) : les barres du navigateur recouvrent une partie de la
+// page. On cale le jeu sur la zone réellement visible et on recalcule l'échelle.
+// sonde pour lire les marges de sécurité (encoche, barre d'accueil) en pixels
+const safeProbe = document.createElement('div');
+safeProbe.style.cssText =
+  'position:fixed;visibility:hidden;pointer-events:none;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)';
+document.body.appendChild(safeProbe);
+const fitToVisibleArea = () => {
+  const vv = window.visualViewport;
+  const el = document.getElementById('game');
+  if (!vv || !el) return;
+  window.scrollTo(0, 0);
+  const cs = getComputedStyle(safeProbe);
+  const top = parseFloat(cs.paddingTop) || 0;
+  const bottom = parseFloat(cs.paddingBottom) || 0;
+  el.style.top = `${vv.offsetTop + top}px`;
+  el.style.bottom = 'auto';
+  el.style.height = `${Math.max(100, vv.height - top - bottom)}px`;
+  game.scale.refresh();
+};
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', fitToVisibleArea);
+  window.visualViewport.addEventListener('scroll', fitToVisibleArea);
+  window.addEventListener('orientationchange', () => setTimeout(fitToVisibleArea, 300));
+  game.events.once('ready', fitToVisibleArea);
+}
+
 // retour sur l'onglet / l'appli : le navigateur a pu suspendre le son
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden && moodAudio.ctx) moodAudio.ctx.resume().catch(() => {});

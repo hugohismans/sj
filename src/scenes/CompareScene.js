@@ -30,7 +30,7 @@ export default class CompareScene extends Phaser.Scene {
     });
 
     C.rows.forEach((row, r) => {
-      const y = 132 + r * 112;
+      const y = 128 + r * 102;
       makeText(this, labelX, y + 18, row.label, { fontSize: '18px', align: 'left', wordWrap: { width: 250 } }).setOrigin(0, 0.5);
       ['type1', 'type2'].forEach((mode, i) => {
         const cell = row[mode];
@@ -48,12 +48,12 @@ export default class CompareScene extends Phaser.Scene {
       });
     });
 
-    makeText(this, w / 2, h - 96, C.note, { fontSize: '14px', color: COLORS.muted });
-    makeButton(this, w / 2 - 130, h - 46, C.resources, () => this.scene.start('Resources', { from: 'Title' }), {
+    makeText(this, w / 2, h - 108, C.note, { fontSize: '14px', color: COLORS.muted });
+    makeButton(this, w / 2 - 130, h - 60, C.resources, () => this.scene.start('Resources', { from: 'Title' }), {
       width: 220,
       height: 48,
     });
-    makeButton(this, w / 2 + 130, h - 46, C.title_screen, () => this.scene.start('Title'), {
+    makeButton(this, w / 2 + 130, h - 60, C.title_screen, () => this.scene.start('Title'), {
       width: 220,
       height: 48,
       fill: 0x22252f,
