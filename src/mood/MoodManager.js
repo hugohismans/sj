@@ -1,21 +1,21 @@
 import Phaser from 'phaser';
-import { GAME, MOOD_PROFILES } from '../config.js';
-
-const { STABLE, MANIC, DEPRESSIVE } = MOOD_PROFILES;
-const KEYS = Object.keys(STABLE);
+import { GAME, buildProfiles } from '../config.js';
 
 /**
  * MoodManager
  * - tient une humeur continue `value` dans [-1, 1] qui glisse vers `target`
  * - calcule les paramètres courants (`params`) par interpolation des profils
+ *   du mode (STABLE, HIGH = manie ou hypomanie, DEPRESSIVE)
  * - applique les effets : physique, image (post-FX), caméra, son
  *
  * Les autres systèmes (joueur, UI, pensées) lisent `mood.params` à chaque frame.
  */
 export default class MoodManager extends Phaser.Events.EventEmitter {
-  constructor(scene, initialValue = 0) {
+  constructor(scene, initialValue = 0, modeKey = 'type1') {
     super();
     this.scene = scene;
+    this.profiles = buildProfiles(modeKey);
+    this.keys = Object.keys(this.profiles.STABLE);
     this.value = initialValue;
     this.target = initialValue;
     this.followRate = GAME.moodFollowRate;
@@ -31,14 +31,14 @@ export default class MoodManager extends Phaser.Events.EventEmitter {
 
   // ---------------------------------------------------------------- état ----
 
-  /** 'depressive' | 'stable' | 'manic' (selon la valeur courante) */
+  /** 'depressive' | 'stable' | 'high' (selon la valeur courante) */
   get state() {
     if (this.value <= -0.45) return 'depressive';
-    if (this.value >= 0.45) return 'manic';
+    if (this.value >= 0.45) return 'high';
     return 'stable';
   }
 
-  /** Intensité de la phase maniaque (0..1) et dépressive (0..1) */
+  /** Intensité de la phase haute (0..1) et dépressive (0..1) */
   get manic() {
     return Math.max(0, this.value);
   }
@@ -61,10 +61,11 @@ export default class MoodManager extends Phaser.Events.EventEmitter {
 
   _computeParams() {
     const v = this.value;
-    const other = v >= 0 ? MANIC : DEPRESSIVE;
+    const { STABLE, HIGH, DEPRESSIVE } = this.profiles;
+    const other = v >= 0 ? HIGH : DEPRESSIVE;
     // courbe douce : les petites variations restent proches de la stabilité
     const t = easeInOut(Math.abs(v));
-    for (const k of KEYS) {
+    for (const k of this.keys) {
       this.params[k] = STABLE[k] + (other[k] - STABLE[k]) * t;
     }
   }

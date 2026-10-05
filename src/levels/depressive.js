@@ -1,4 +1,4 @@
-// Niveau 3 — Phase dépressive.
+// Type 1 — Phase dépressive.
 // Lent, saut faible, léger retard des commandes. Les murs de 3 tuiles sont
 // infranchissables seul : le proche ('C') arrive et aide à passer.
 export default {

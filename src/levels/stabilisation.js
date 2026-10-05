@@ -1,4 +1,4 @@
-// Niveau 4 — Stabilisation.
+// Stabilisation — commun aux deux modes (outils et intensité fixés par le mode).
 // L'humeur oscille ; chaque outil réduit l'amplitude (voir STABILISATION dans
 // config.js). Les variations restent, mais elles deviennent vivables.
 export default {
@@ -9,7 +9,7 @@ export default {
     start: -0.55,
     mode: 'oscillation',
   },
-  // ordre des outils 'a', 'b', 'c', 'd' dans la carte
+  // ordre des outils 'a', 'b', 'c', 'd' dans la carte (remplacé par MODES)
   tools: ['traitement', 'suivi', 'entourage', 'sommeil'],
   events: {},
   map: [

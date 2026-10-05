@@ -1,4 +1,4 @@
-// Niveau 1 — Stabilité (euthymie). Sert de tutoriel et de référence.
+// Stabilité (euthymie) — commun aux deux modes. Sert de tutoriel et de référence.
 export default {
   key: 'stable',
   background: 'green',

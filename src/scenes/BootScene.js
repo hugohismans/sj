@@ -1,5 +1,12 @@
 import Phaser from 'phaser';
-import { GAME } from '../config.js';
+import { GAME, MODES } from '../config.js';
+
+/** Remet à zéro l'état d'une partie (pièces, décisions impulsives…). */
+export function resetRun(registry, mode) {
+  registry.set('mode', mode);
+  registry.set('coins', 0);
+  registry.set('flags', {});
+}
 
 const ASSETS = 'assets/kenney_pixel-platformer/';
 
@@ -25,11 +32,15 @@ export default class BootScene extends Phaser.Scene {
     this.makeBackgrounds();
     this.makeToolTextures();
     this.makeAnims();
-    this.registry.set('coins', 0);
-    this.registry.set('spentAll', false);
-    const niveau = parseInt(new URLSearchParams(location.search).get('niveau'), 10);
-    if (niveau >= 1 && niveau <= 4) this.scene.start('Game', { level: niveau - 1 });
-    else this.scene.start('Warning');
+    resetRun(this.registry, 'type1');
+    // Raccourci de test : ?mode=2&niveau=3 lance directement l'étape 3 du type 2
+    const q = new URLSearchParams(location.search);
+    const mode = q.get('mode') === '2' ? 'type2' : 'type1';
+    const niveau = parseInt(q.get('niveau'), 10);
+    if (niveau >= 1 && niveau <= MODES[mode].sequence.length) {
+      resetRun(this.registry, mode);
+      this.scene.start('Game', { mode, step: niveau - 1 });
+    } else this.scene.start('Warning');
   }
 
   /** Assemble les bandes de décor (ciel / collines / sol) en une texture par ambiance. */
@@ -65,6 +76,15 @@ export default class BootScene extends Phaser.Scene {
     g.fillStyle(outline).fillRect(5, 8, 2, 2).fillRect(8, 8, 2, 2).fillRect(11, 8, 2, 2).fillRect(5, 11, 2, 2);
     g.fillStyle(0x7fb3c8).fillRect(8, 11, 2, 2);
     g.generateTexture('tool_suivi', S, S);
+
+    // Diagnostic : bloc-notes avec une coche
+    g.clear();
+    g.fillStyle(outline).fillRect(3, 2, 12, 15);
+    g.fillStyle(0xf2f0e8).fillRect(4, 4, 10, 12);
+    g.fillStyle(0x9a8a70).fillRect(6, 1, 6, 3);
+    g.fillStyle(outline).fillRect(6, 7, 6, 1).fillRect(6, 10, 4, 1);
+    g.fillStyle(0x6fae7a).fillRect(9, 13, 1, 2).fillRect(10, 12, 1, 2).fillRect(11, 11, 1, 2).fillRect(8, 12, 1, 2);
+    g.generateTexture('tool_diagnostic', S, S);
 
     // Entourage : deux silhouettes
     g.clear();
@@ -104,6 +124,7 @@ export default class BootScene extends Phaser.Scene {
   makeAnims() {
     this.anims.create({ key: 'player-walk', frames: this.anims.generateFrameNumbers('chars', { frames: [0, 1] }), frameRate: 8, repeat: -1 });
     this.anims.create({ key: 'companion-walk', frames: this.anims.generateFrameNumbers('chars', { frames: [9, 10] }), frameRate: 6, repeat: -1 });
+    this.anims.create({ key: 'carer-walk', frames: this.anims.generateFrameNumbers('chars', { frames: [6, 7] }), frameRate: 8, repeat: -1 });
     this.anims.create({ key: 'coin-spin', frames: this.anims.generateFrameNumbers('tiles', { frames: [151, 152] }), frameRate: 5, repeat: -1 });
     this.anims.create({ key: 'flag-wave', frames: this.anims.generateFrameNumbers('tiles', { frames: [111, 112] }), frameRate: 4, repeat: -1 });
   }

@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { GAUGE } from '../config.js';
-import { THOUGHTS, LEVEL_NAMES, CHOICE } from '../content/texts.js';
+import { THOUGHTS, LEVEL_NAMES } from '../content/texts.js';
 import { touchState } from '../input/Controls.js';
 import { makeText, makeButton, FONT } from '../ui/widgets.js';
 import { moodAudio } from '../audio/MoodAudio.js';
@@ -25,10 +25,11 @@ export default class UIScene extends Phaser.Scene {
     this.h = h;
     this.thoughts = [];
     this.thoughtTimer = 2500;
+    this.silent = false;
     this.lastPool = [];
 
     // --- Nom du niveau (discret, disparaît)
-    const name = makeText(this, 24, 24, LEVEL_NAMES[this.game_.levelIndex], {
+    const name = makeText(this, 24, 24, LEVEL_NAMES[this.game_.level.key] || '', {
       fontSize: '18px',
       color: '#e8e6e1',
       stroke: '#1b1d26',
@@ -41,6 +42,7 @@ export default class UIScene extends Phaser.Scene {
     const gw = GAUGE.width;
     const track = this.add.graphics();
     const steps = 40;
+    const highColor = this.game_.mode.gaugeHighColor ?? GAUGE.manicColor;
     for (let i = 0; i < steps; i++) {
       const t = i / (steps - 1);
       const c =
@@ -53,7 +55,7 @@ export default class UIScene extends Phaser.Scene {
             )
           : Phaser.Display.Color.Interpolate.ColorWithColor(
               Phaser.Display.Color.ValueToColor(GAUGE.stableColor),
-              Phaser.Display.Color.ValueToColor(GAUGE.manicColor),
+              Phaser.Display.Color.ValueToColor(highColor),
               100,
               (t - 0.5) * 200
             );
@@ -168,9 +170,13 @@ export default class UIScene extends Phaser.Scene {
     this.coinText.setVisible(this.showCoins).setText(String(coins));
     this.coinText.setAlpha(p.uiAlpha);
     this.coinIcon.setAlpha(p.uiAlpha);
+    // interface saturée en phase haute intense : le compteur s'agite
+    const agit = p.uiJitter > 1 ? Math.sin(time / 70) * 0.06 * (p.uiJitter / 3) : 0;
+    this.coinIcon.setScale(2 * (1 + agit));
+    this.coinText.setScale(1 + agit);
 
     // Pensées spontanées
-    if (!this.choice && !gs.finished) {
+    if (!this.choice && !gs.finished && !this.silent) {
       this.thoughtTimer -= delta;
       const alive = this.thoughts.length;
       if (this.thoughtTimer <= 0 && alive < Math.round(p.thoughtMax)) {
@@ -188,13 +194,14 @@ export default class UIScene extends Phaser.Scene {
     const gs = this.game_;
     const v = gs.mood.value;
     let pool;
-    if (v > 0.4) pool = THOUGHTS.manic;
+    if (v > 0.4) pool = THOUGHTS[gs.mode.highThoughts] || THOUGHTS.manic;
     else if (v < -0.4) {
       pool = THOUGHTS.depressive;
-      if (this.registry.get('spentAll') && gs.levelIndex === 2) pool = pool.concat(THOUGHTS.depressiveDebt, THOUGHTS.depressiveDebt);
-    } else pool = THOUGHTS[gs.level.thoughts] && gs.level.thoughts !== 'manic' && gs.level.thoughts !== 'depressive'
-      ? THOUGHTS[gs.level.thoughts]
-      : THOUGHTS.stable;
+      if (gs.flags.spend && gs.level.key === 'depressive') pool = pool.concat(THOUGHTS.depressiveDebt, THOUGHTS.depressiveDebt);
+    } else {
+      const k = gs.level.thoughts;
+      pool = k === 'stable' || k === 'stabilisation' ? THOUGHTS[k] : THOUGHTS.stable;
+    }
     // évite de répéter les dernières pensées
     const fresh = pool.filter((t) => !this.lastPool.includes(t));
     const text = Phaser.Utils.Array.GetRandom(fresh.length ? fresh : pool);
@@ -215,8 +222,21 @@ export default class UIScene extends Phaser.Scene {
   spawnThought(text) {
     const v = this.game_.mood.value;
     const p = this.game_.mood.params;
-    if (v > 0.4) this.spawnManicThought(text, p);
+    if (v > 0.4 && this.game_.mode.highThoughtStyle === 'bubbles') this.spawnManicThought(text, p);
     else this.spawnCalmThought(text, p, v);
+  }
+
+  /** Rafale de pensées envahissantes (pic de la crise maniaque). */
+  thoughtBurst(n) {
+    for (let i = 0; i < n; i++) {
+      this.time.delayedCall(i * 160, () => this.spawnManicThought(this.pickThought(), this.game_.mood.params));
+    }
+  }
+
+  /** Silence : toutes les pensées s'effacent (après l'intervention). */
+  clearThoughts() {
+    [...this.thoughts].forEach((t) => this.removeThought(t, true));
+    this.silent = true;
   }
 
   /** Bulles rapides, envahissantes, un peu partout. */
@@ -259,11 +279,12 @@ export default class UIScene extends Phaser.Scene {
   spawnCalmThought(text, p, v) {
     const { w, h } = this;
     const heavy = v < -0.4;
+    const warm = v > 0.4; // hypomanie : pensées agréables, couleur chaude
     const t = this.add.text(w / 2, h * 0.27, '', {
       fontFamily: FONT,
       fontSize: heavy ? '24px' : '20px',
       fontStyle: 'italic',
-      color: heavy ? '#b9bcc6' : '#f4f1ea',
+      color: heavy ? '#b9bcc6' : warm ? '#fff1c2' : '#f4f1ea',
       stroke: '#1b1d26',
       strokeThickness: 4,
       align: 'center',
@@ -326,19 +347,19 @@ export default class UIScene extends Phaser.Scene {
   //  Choix impulsif
   // ===========================================================================
 
-  showChoice(onResult) {
+  showChoice(def, onResult) {
     const { w, h } = this;
     Object.assign(touchState, { left: false, right: false, jump: false });
     const c = this.add.container(0, 0).setDepth(80);
     const shade = this.add.rectangle(w / 2, h / 2, w, h, 0x3a1a00, 0.35).setInteractive();
-    const title = makeText(this, w / 2, h * 0.24, CHOICE.title, {
+    const title = makeText(this, w / 2, h * 0.24, def.title, {
       fontSize: '44px',
       fontStyle: 'bold',
       color: '#fff1c2',
       stroke: '#a0400a',
       strokeThickness: 6,
     });
-    const body = makeText(this, w / 2, h * 0.4, CHOICE.body, {
+    const body = makeText(this, w / 2, h * 0.4, def.body, {
       fontSize: '24px',
       color: '#fff8e8',
       stroke: '#2a1a10',
@@ -360,7 +381,7 @@ export default class UIScene extends Phaser.Scene {
       });
     };
     // Le « oui » est gros, brillant, tentant. Le « non » est petit.
-    const yes = makeButton(this, w / 2, h * 0.6, CHOICE.yes, () => pick(true), {
+    const yes = makeButton(this, w / 2, h * 0.6, def.yes, () => pick(true), {
       width: 360,
       height: 74,
       fontSize: '28px',
@@ -368,7 +389,7 @@ export default class UIScene extends Phaser.Scene {
       stroke: 0xfff1c2,
       textColor: '#fff8e8',
     });
-    const no = makeButton(this, w / 2, h * 0.78, CHOICE.no, () => pick(false), {
+    const no = makeButton(this, w / 2, h * 0.78, def.no, () => pick(false), {
       width: 130,
       height: 36,
       fontSize: '15px',

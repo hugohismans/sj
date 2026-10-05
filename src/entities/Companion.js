@@ -8,8 +8,15 @@ import { makeText } from '../ui/widgets.js';
  * Quand il est à côté, le joueur saute plus haut et avance plus facilement.
  */
 export default class Companion extends Phaser.Physics.Arcade.Sprite {
-  constructor(scene, x, y, player) {
-    super(scene, x, y, 'chars', 9);
+  /**
+   * opts.frame / opts.anim : apparence (proche par défaut, soignant en crise)
+   * opts.follow : false = reste sur place (le soignant pendant la crise)
+   */
+  constructor(scene, x, y, player, opts = {}) {
+    super(scene, x, y, 'chars', opts.frame ?? 9);
+    this.baseFrame = opts.frame ?? 9;
+    this.walkAnim = opts.anim ?? 'companion-walk';
+    this.follow = opts.follow ?? true;
     scene.add.existing(this);
     scene.physics.add.existing(this);
     this.player = player;
@@ -49,7 +56,11 @@ export default class Companion extends Phaser.Physics.Arcade.Sprite {
 
     // suit le joueur en restant à distance douce
     let vx = 0;
-    if (dist > COMPANION.followDistance) {
+    if (this.approachSpeed) {
+      // va à la rencontre du joueur (crise) jusqu'à le toucher
+      if (dist > 40) vx = Math.sign(dx) * this.approachSpeed;
+      this.setFlipX(dx < 0);
+    } else if (this.follow && dist > COMPANION.followDistance) {
       const speed = Math.max(140, Math.abs(p.body.velocity.x) * COMPANION.followSpeed + 40);
       vx = Math.sign(dx) * Math.min(speed, 120 + dist * 1.5);
     }
@@ -57,27 +68,28 @@ export default class Companion extends Phaser.Physics.Arcade.Sprite {
 
     // franchit les obstacles : il saute si bloqué ou si le joueur est plus haut
     const blocked = body.blocked.left || body.blocked.right;
-    if (onGround && ((blocked && vx !== 0) || (p.y < this.y - 60 && dist < 140))) {
+    if (this.follow && onGround && ((blocked && vx !== 0) || (p.y < this.y - 60 && dist < 140))) {
       body.setVelocityY(-760);
     }
     // ne se perd jamais : s'il est trop loin, il revient près du joueur
-    if (Phaser.Math.Distance.Between(this.x, this.y, p.x, p.y) > 600) {
+    if (this.follow && Phaser.Math.Distance.Between(this.x, this.y, p.x, p.y) > 600) {
       this.setPosition(p.x - Math.sign(dx || 1) * 60, p.y - 20);
       body.setVelocity(0, 0);
     }
 
     if (vx !== 0) this.setFlipX(vx < 0);
-    if (Math.abs(vx) > 5 && onGround) this.anims.play('companion-walk', true);
+    else if (this.follow || this.approachSpeed) this.setFlipX(dx < 0);
+    if (Math.abs(vx) > 5 && onGround) this.anims.play(this.walkAnim, true);
     else {
       this.anims.stop();
-      this.setFrame(9);
+      this.setFrame(this.baseFrame);
     }
 
     this.bubble.setPosition(this.x, this.y - 56);
 
     // lien visuel discret quand le soutien agit
     const d = Phaser.Math.Distance.Between(this.x, this.y, p.x, p.y);
-    this.supporting = d < COMPANION.supportRadius;
+    this.supporting = this.follow && d < COMPANION.supportRadius;
     this.link.clear();
     if (this.supporting) {
       const a = 0.35 * (1 - d / COMPANION.supportRadius) + 0.1;

@@ -1,7 +1,8 @@
 import Phaser from 'phaser';
-import { INTERLUDES, INTERLUDE_SPENT, CONTINUE } from '../content/texts.js';
+import { INTERLUDES, INTERLUDE_SPENT } from '../content/content.js';
+import { CONTINUE } from '../content/texts.js';
+import { MODES } from '../config.js';
 import { makeText, COLORS } from '../ui/widgets.js';
-import { LEVELS } from '../levels/index.js';
 
 /** Écran de texte bref entre deux niveaux. */
 export default class InterludeScene extends Phaser.Scene {
@@ -10,16 +11,18 @@ export default class InterludeScene extends Phaser.Scene {
   }
 
   init(data) {
-    this.after = data.after; // index du niveau qui vient de se terminer
+    this.mode = data.mode;
+    this.step = data.step; // étape qui vient de se terminer
     this.leaving = false;
   }
 
   create() {
     const { width: w, height: h } = this.scale;
-    const lines = [...INTERLUDES[this.after]];
-    if (this.after === 1 && this.registry.get('spentAll')) lines.push(INTERLUDE_SPENT);
+    const lines = [...(INTERLUDES[this.mode][this.step] || [])];
+    const levelKey = MODES[this.mode].sequence[this.step].level;
+    if (levelKey === 'manic' && this.registry.get('flags')?.spend) lines.push(INTERLUDE_SPENT);
 
-    const texts = lines.map((line, i) =>
+    const texts = lines.map((line) =>
       makeText(this, w / 2, 0, line, { fontSize: '23px', wordWrap: { width: w * 0.7 } }).setAlpha(0)
     );
     // empilement vertical centré
@@ -48,9 +51,9 @@ export default class InterludeScene extends Phaser.Scene {
     this.leaving = true;
     this.cameras.main.fadeOut(600, 27, 29, 38);
     this.cameras.main.once('camerafadeoutcomplete', () => {
-      const nextLevel = this.after + 1;
-      if (nextLevel < LEVELS.length) this.scene.start('Game', { level: nextLevel });
-      else this.scene.start('End');
+      const nextStep = this.step + 1;
+      if (nextStep < MODES[this.mode].sequence.length) this.scene.start('Game', { mode: this.mode, step: nextStep });
+      else this.scene.start('End', { mode: this.mode });
     });
   }
 }

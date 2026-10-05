@@ -2,10 +2,14 @@
 //  config.js — TOUS les réglages de ressenti sont ici.
 //
 //  L'humeur est une valeur continue entre -1 et +1 :
-//      -1 = phase dépressive   0 = stabilité (euthymie)   +1 = phase maniaque
-//  Chaque paramètre est interpolé entre les profils DEPRESSIVE / STABLE / MANIC
+//      -1 = phase dépressive   0 = stabilité (euthymie)   +1 = phase haute
+//  La « phase haute » dépend du mode : MANIC (type 1) ou HYPOMANIC (type 2).
+//  Chaque paramètre est interpolé entre les profils DEPRESSIVE / STABLE / haut
 //  selon cette valeur. Aucune bascule brutale : changer l'humeur, c'est glisser
 //  d'un profil à l'autre.
+//
+//  Les deux modes de jeu (séquence de niveaux + intensités) sont définis dans
+//  MODES, en bas de ce fichier.
 //
 //  Unités : pixels (monde à l'échelle x2, 1 tuile = 36 px), secondes, ms.
 // =============================================================================
@@ -48,6 +52,7 @@ const STABLE = {
 
   // --- Perception des commandes -----------------------------------------------
   inputDelayMs: 0, // retard entre l'appui et la réaction du personnage
+  autoRun: 0, // 0..1 : le personnage continue d'avancer seul quand on lâche tout
 
   // --- Image -------------------------------------------------------------------
   saturation: 0, // -1 = gris, 0 = normal, +1 = très saturé
@@ -82,49 +87,99 @@ const STABLE = {
   uiJitter: 0, // tremblement de la jauge (px)
 };
 
+// Manie (type 1) : niveau maximal. Difficile à doser, on ne s'arrête plus.
 const MANIC = {
-  moveSpeed: 390,
-  acceleration: 1250,
-  deceleration: 300, // glisse longtemps : dur de s'arrêter pile
-  turnFactor: 0.55, // faire demi-tour prend du temps → on dépasse la cible
-  airControl: 0.6,
-  airDeceleration: 120,
+  moveSpeed: 420,
+  acceleration: 1200,
+  deceleration: 220, // glisse longtemps : dur de s'arrêter pile
+  turnFactor: 0.45, // faire demi-tour prend du temps → on dépasse la cible
+  airControl: 0.55,
+  airDeceleration: 80,
 
-  jumpVelocity: 760,
+  jumpVelocity: 780,
   gravity: 1350,
-  jumpCut: 0.85, // on ne contrôle presque plus la hauteur
+  jumpCut: 0.9, // on ne contrôle presque plus la hauteur
   maxFallSpeed: 1000,
-  coyoteMs: 60,
-  jumpBufferMs: 160,
+  coyoteMs: 50,
+  jumpBufferMs: 180,
 
   inputDelayMs: 0,
+  autoRun: 0.3, // impossible de rester immobile
 
-  saturation: 0.55,
-  brightness: 1.05,
-  contrast: 0.12,
-  hue: 5,
+  saturation: 0.6,
+  brightness: 1.06,
+  contrast: 0.15,
+  hue: 6,
   vignetteStrength: 0.05,
   vignetteRadius: 0.95,
 
-  cameraLerp: 0.045,
-  cameraShake: 3.5,
-  cameraJitterHz: 18,
-  cameraZoom: 0.95,
-  cameraZoomPulse: 0.018,
+  cameraLerp: 0.04,
+  cameraShake: 4.5,
+  cameraJitterHz: 20,
+  cameraZoom: 0.94,
+  cameraZoomPulse: 0.022,
 
-  tempo: 152,
+  tempo: 160,
   lowpassHz: 14000,
   musicVolume: 0.38,
-  noteDensity: 0.95,
-  hatVolume: 0.12,
+  noteDensity: 0.97,
+  hatVolume: 0.14,
 
-  thoughtIntervalMs: 900,
-  thoughtLifeMs: 1700,
-  thoughtMax: 6,
+  thoughtIntervalMs: 750,
+  thoughtLifeMs: 1600,
+  thoughtMax: 7,
   thoughtTypeSpeed: 0,
 
   uiAlpha: 1,
-  uiJitter: 2.5,
+  uiJitter: 3.5,
+};
+
+// Hypomanie (type 2) : version atténuée. Plus rapide, plus précis, agréable.
+// C'est voulu : le niveau doit sembler plus facile, presque « enfin la forme ».
+const HYPOMANIC = {
+  moveSpeed: 285,
+  acceleration: 2300,
+  deceleration: 2600, // s'arrête net : tout semble sous contrôle
+  turnFactor: 1.8,
+  airControl: 0.95,
+  airDeceleration: 1000,
+
+  jumpVelocity: 660,
+  gravity: 1450,
+  jumpCut: 0.45,
+  maxFallSpeed: 900,
+  coyoteMs: 130, // plus tolérant que la normale
+  jumpBufferMs: 150,
+
+  inputDelayMs: 0,
+  autoRun: 0,
+
+  saturation: 0.22,
+  brightness: 1.06,
+  contrast: 0.05,
+  hue: 3,
+  vignetteStrength: 0.06,
+  vignetteRadius: 0.9,
+
+  cameraLerp: 0.15,
+  cameraShake: 0,
+  cameraJitterHz: 0,
+  cameraZoom: 1,
+  cameraZoomPulse: 0.004,
+
+  tempo: 108,
+  lowpassHz: 11000,
+  musicVolume: 0.34,
+  noteDensity: 0.75,
+  hatVolume: 0.03,
+
+  thoughtIntervalMs: 5500,
+  thoughtLifeMs: 3200,
+  thoughtMax: 1,
+  thoughtTypeSpeed: 0,
+
+  uiAlpha: 1,
+  uiJitter: 0,
 };
 
 const DEPRESSIVE = {
@@ -143,6 +198,7 @@ const DEPRESSIVE = {
   jumpBufferMs: 60,
 
   inputDelayMs: 190, // léger décalage, on se sent « en retard » sur soi-même
+  autoRun: 0,
 
   saturation: -0.85,
   brightness: 0.82,
@@ -172,7 +228,7 @@ const DEPRESSIVE = {
   uiJitter: 0,
 };
 
-export const MOOD_PROFILES = { STABLE, MANIC, DEPRESSIVE };
+export const MOOD_PROFILES = { STABLE, MANIC, HYPOMANIC, DEPRESSIVE };
 
 // -----------------------------------------------------------------------------
 //  Aide (compagnon / proche soignant) pendant la phase dépressive
@@ -188,14 +244,18 @@ export const COMPANION = {
 };
 
 // -----------------------------------------------------------------------------
-//  Phase maniaque : objets brillants et choix impulsif
+//  Phase maniaque : objets brillants, choix impulsifs, crise
 // -----------------------------------------------------------------------------
 export const MANIC_EXTRAS = {
   coinMagnetRadius: 70, // les pièces attirent quand on passe à côté
   coinGlowPulseMs: 380,
-  // Conséquence plus tard si on a « tout dépensé » :
-  spentDebtSpeedMultiplier: 0.9, // niveau dépressif un peu plus lourd
-  spentExtraThoughts: true,
+  // Conséquence au niveau dépressif si on a « tout dépensé » :
+  spentDebtSpeedMultiplier: 0.9,
+  // Crise au pic de la manie (type 1) :
+  crisisControl: 0.15, // part des commandes qui répond encore (0..1)
+  crisisAutoRun: 1, // le personnage fonce tout seul
+  crisisCarerSpeed: 150, // vitesse du soignant qui vient à sa rencontre (px/s)
+  crisisCalmDelayMs: 8500, // durée de l'intervention avant la fin du niveau
 };
 
 // -----------------------------------------------------------------------------
@@ -210,6 +270,7 @@ export const STABILISATION = {
   periodSeconds: 9, // durée d'un cycle haut → bas → haut
   periodGrowthPerTool: 1.2, // les cycles deviennent plus lents, plus prévisibles
   amplitudeEaseRate: 0.35, // vitesse à laquelle la nouvelle amplitude s'installe
+  upScale: 1, // échelle des pics hauts (< 1 : les hauts sont plus discrets que les bas)
 };
 
 // Couleurs de la jauge d'humeur
@@ -220,3 +281,68 @@ export const GAUGE = {
   stableColor: 0x9fb8a0,
   manicColor: 0xe0884a,
 };
+
+// =============================================================================
+//  MODES DE JEU
+//  Même moteur, séquences et intensités différentes.
+//  - profileOverrides : remplace des valeurs des profils ci-dessus pour ce mode
+//  - sequence : niveaux joués dans l'ordre (clés de src/levels/index.js) ;
+//    chaque étape peut surcharger des champs du niveau (ex. tools)
+// =============================================================================
+export const MODES = {
+  type1: {
+    highProfile: 'MANIC',
+    highThoughts: 'manic', // groupe de pensées en phase haute
+    highThoughtStyle: 'bubbles', // 'bubbles' (envahissant) ou 'calm'
+    gaugeHighColor: 0xe0884a,
+    profileOverrides: {
+      DEPRESSIVE: {},
+    },
+    stabilisation: { upScale: 1 },
+    sequence: [
+      { level: 'stable' },
+      { level: 'rise' },
+      { level: 'manic' },
+      { level: 'fall' },
+      { level: 'depressive' },
+      { level: 'stabilisation', tools: ['traitement', 'suivi', 'entourage', 'sommeil'] },
+    ],
+  },
+
+  type2: {
+    highProfile: 'HYPOMANIC',
+    highThoughts: 'hypomanic',
+    highThoughtStyle: 'calm',
+    gaugeHighColor: 0xc9c27a, // le haut de la jauge se remarque à peine
+    profileOverrides: {
+      // dépression plus lente et plus lourde encore : elle domine le type 2
+      DEPRESSIVE: { moveSpeed: 82, acceleration: 360, inputDelayMs: 220, tempo: 52 },
+    },
+    // pics hauts discrets, centre légèrement bas
+    stabilisation: { baseMood: -0.1, startAmplitude: 0.75, upScale: 0.55 },
+    sequence: [
+      { level: 'stable' },
+      { level: 'hypomanic' },
+      { level: 'depressiveLong' },
+      { level: 'stableShort' },
+      { level: 'depressiveAgain' },
+      { level: 'stabilisation', tools: ['diagnostic', 'traitement', 'entourage', 'sommeil'] },
+    ],
+  },
+};
+
+/** Profils { STABLE, HIGH, DEPRESSIVE } d'un mode, surcharges appliquées. */
+export function buildProfiles(modeKey) {
+  const mode = MODES[modeKey] || MODES.type1;
+  const o = mode.profileOverrides || {};
+  return {
+    STABLE: { ...STABLE, ...(o.STABLE || {}) },
+    HIGH: { ...MOOD_PROFILES[mode.highProfile], ...(o[mode.highProfile] || {}) },
+    DEPRESSIVE: { ...DEPRESSIVE, ...(o.DEPRESSIVE || {}) },
+  };
+}
+
+/** Réglages de stabilisation d'un mode. */
+export function stabilisationFor(modeKey) {
+  return { ...STABILISATION, ...((MODES[modeKey] || MODES.type1).stabilisation || {}) };
+}

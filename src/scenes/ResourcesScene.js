@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { RESOURCES } from '../content/texts.js';
+import { RESOURCES } from '../content/content.js';
 import { makeText, makeButton, COLORS } from '../ui/widgets.js';
 
 export default class ResourcesScene extends Phaser.Scene {

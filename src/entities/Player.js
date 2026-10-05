@@ -15,7 +15,9 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.body.setSize(14, 19).setOffset(5, 5);
     this.setDepth(10);
 
-    this.modifiers = { speed: 1, jump: 1 };
+    // control < 1 : les commandes ne répondent plus qu'en partie (crise)
+    this.modifiers = { speed: 1, jump: 1, autoRun: 0, control: 1 };
+    this.facing = 1;
     this.lastGrounded = 0;
     this.lastJumpPress = -9999;
     this.jumping = false;
@@ -36,16 +38,25 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     }
 
     // --- Horizontal : accélération / inertie
-    const dir = (input.right ? 1 : 0) - (input.left ? 1 : 0);
-    const maxSpeed = p.moveSpeed * this.modifiers.speed;
+    const m = this.modifiers;
+    let dir = (input.right ? 1 : 0) - (input.left ? 1 : 0);
+    const maxSpeed = p.moveSpeed * m.speed;
+    const autoRun = Math.max(p.autoRun, m.autoRun);
     let vx = body.velocity.x;
-    if (dir !== 0) {
+    if (dir !== 0 && dir !== this.facing && autoRun > 0.05 && m.control < 1) {
+      // en crise : vouloir s'arrêter ou faire demi-tour ne marche presque plus
+      vx = approach(vx, dir * maxSpeed, p.acceleration * p.turnFactor * m.control * dt);
+    } else if (dir !== 0) {
       let accel = p.acceleration * (onGround ? 1 : p.airControl);
       if (vx !== 0 && Math.sign(vx) !== dir) accel *= p.turnFactor; // demi-tour
       vx = approach(vx, dir * maxSpeed, accel * dt);
+    } else if (autoRun > 0.01) {
+      // on lâche les commandes… mais le corps continue d'avancer
+      vx = approach(vx, this.facing * maxSpeed * autoRun, p.acceleration * 0.5 * dt);
     } else {
       vx = approach(vx, 0, (onGround ? p.deceleration : p.airDeceleration) * dt);
     }
+    if (dir !== 0 && (m.control >= 1 || autoRun < 0.05)) this.facing = dir;
     // si l'humeur ralentit soudain, on ne garde pas une vitesse impossible
     if (Math.abs(vx) > maxSpeed && dir !== 0) vx = approach(vx, dir * maxSpeed, p.deceleration * dt);
     body.setVelocityX(vx);
@@ -68,7 +79,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     if (body.velocity.y > p.maxFallSpeed) body.setVelocityY(p.maxFallSpeed);
 
     // --- Animation
-    if (dir !== 0) this.setFlipX(dir < 0);
+    if (Math.abs(vx) > 5) this.setFlipX(vx < 0);
     if (!onGround) {
       this.anims.stop();
       this.setFrame(1);

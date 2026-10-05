@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { WARNING } from '../content/texts.js';
+import { WARNING } from '../content/content.js';
 import { makeText, makeButton, COLORS } from '../ui/widgets.js';
 import { moodAudio } from '../audio/MoodAudio.js';
 
