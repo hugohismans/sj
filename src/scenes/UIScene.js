@@ -81,8 +81,13 @@ export default class UIScene extends Phaser.Scene {
     this.muteBtn = makeText(this, w - 30, 26, moodAudio.muted ? '×' : '♪', { fontSize: '22px' })
       .setInteractive({ useHandCursor: true })
       .on('pointerup', () => {
-        const m = moodAudio.toggleMute();
-        this.muteBtn.setText(m ? '×' : '♪');
+        // son pas encore actif : ce toucher sert d'abord à l'activer
+        if (!moodAudio.running) {
+          moodAudio.unlock();
+          if (moodAudio.muted) moodAudio.toggleMute();
+          return;
+        }
+        moodAudio.toggleMute();
       });
 
     // --- Commandes tactiles
@@ -155,6 +160,7 @@ export default class UIScene extends Phaser.Scene {
     const p = mood.params;
 
     this.updateTouch();
+    this.muteBtn.setText(moodAudio.muted || !moodAudio.running ? '×' : '♪');
 
     // Jauge : position, opacité et tremblement selon l'humeur
     const jit = p.uiJitter;

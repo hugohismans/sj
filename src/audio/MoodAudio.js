@@ -72,13 +72,56 @@ class MoodAudio {
 
   /** À appeler suite à un geste utilisateur (contrainte des navigateurs mobiles). */
   unlock() {
+    // iPhone : sans ça, le bouton « silencieux » coupe tout le son WebAudio
+    try {
+      if (navigator.audioSession) navigator.audioSession.type = 'playback';
+    } catch (e) {
+      /* non supporté */
+    }
+    this._unlockHtmlAudio();
     if (!this.ctx) {
       const AC = window.AudioContext || window.webkitAudioContext;
       if (!AC) return;
       this.ctx = new AC();
       this._build();
     }
-    if (this.ctx.state === 'suspended') this.ctx.resume();
+    // 'interrupted' : Safari après un appel, un passage en arrière-plan…
+    if (this.ctx.state !== 'running') this.ctx.resume().catch(() => {});
+    // petit son inaudible joué pendant le geste : débloque les anciens iOS
+    if (!this._primed) {
+      this._primed = true;
+      const b = this.ctx.createBuffer(1, 1, 22050);
+      const src = this.ctx.createBufferSource();
+      src.buffer = b;
+      src.connect(this.ctx.destination);
+      src.start(0);
+    }
+  }
+
+  get running() {
+    return !!this.ctx && this.ctx.state === 'running';
+  }
+
+  /**
+   * Anciens iPhone (sans navigator.audioSession) : jouer un élément <audio>
+   * silencieux en boucle fait passer la page en mode « lecture », ce qui
+   * permet d'entendre le WebAudio même avec le bouton silencieux activé.
+   */
+  _unlockHtmlAudio() {
+    if (navigator.audioSession || this._htmlAudio) return;
+    const ua = navigator.userAgent;
+    const ios = /iPad|iPhone|iPod/.test(ua) || (ua.includes('Mac') && 'ontouchend' in document);
+    if (!ios) return;
+    const el = document.createElement('audio');
+    el.setAttribute('x-webkit-airplay', 'deny');
+    el.preload = 'auto';
+    el.loop = true;
+    el.src = SILENT_WAV;
+    el.setAttribute('playsinline', '');
+    el.play().catch(() => {
+      this._htmlAudio = null; // réessaiera au prochain geste
+    });
+    this._htmlAudio = el;
   }
 
   _build() {
@@ -636,6 +679,30 @@ class MoodAudio {
 // =============================================================================
 //  Utilitaires de synthèse
 // =============================================================================
+
+// 0,1 s de silence en WAV 8 bits (pour _unlockHtmlAudio)
+const SILENT_WAV = (() => {
+  const n = 800;
+  const bytes = new Uint8Array(44 + n);
+  const v = new DataView(bytes.buffer);
+  const str = (o, t) => [...t].forEach((c, i) => (bytes[o + i] = c.charCodeAt(0)));
+  str(0, 'RIFF');
+  v.setUint32(4, 36 + n, true);
+  str(8, 'WAVEfmt ');
+  v.setUint32(16, 16, true);
+  v.setUint16(20, 1, true);
+  v.setUint16(22, 1, true);
+  v.setUint32(24, 8000, true);
+  v.setUint32(28, 8000, true);
+  v.setUint16(32, 1, true);
+  v.setUint16(34, 8, true);
+  str(36, 'data');
+  v.setUint32(40, n, true);
+  bytes.fill(128, 44);
+  let bin = '';
+  bytes.forEach((b) => (bin += String.fromCharCode(b)));
+  return 'data:audio/wav;base64,' + btoa(bin);
+})();
 
 function clamp01(v) {
   return Math.max(0, Math.min(1, v));

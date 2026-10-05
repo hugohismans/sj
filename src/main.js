@@ -38,7 +38,14 @@ const game = new Phaser.Game({
 });
 
 // Les navigateurs mobiles exigent un geste utilisateur pour activer le son
-['pointerdown', 'keydown', 'touchstart'].forEach((ev) => window.addEventListener(ev, () => moodAudio.unlock(), { passive: true }));
+// (Safari n'accepte que la fin d'un appui : touchend / pointerup / click)
+['pointerdown', 'pointerup', 'touchstart', 'touchend', 'click', 'keydown'].forEach((ev) =>
+  window.addEventListener(ev, () => moodAudio.unlock(), { passive: true, capture: true })
+);
+// retour sur l'onglet / l'appli : le navigateur a pu suspendre le son
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && moodAudio.ctx) moodAudio.ctx.resume().catch(() => {});
+});
 
 // Raccourcis de test : ?mode=2&niveau=3 (voir BootScene), ?debug expose `window.game`
 const params = new URLSearchParams(location.search);
