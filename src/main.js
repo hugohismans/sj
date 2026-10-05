@@ -42,4 +42,7 @@ const game = new Phaser.Game({
 
 // Raccourcis de test : ?mode=2&niveau=3 (voir BootScene), ?debug expose `window.game`
 const params = new URLSearchParams(location.search);
-if (GAME.debug || params.has('debug')) window.game = game;
+if (GAME.debug || params.has('debug')) {
+  window.game = game;
+  window.moodAudio = moodAudio;
+}

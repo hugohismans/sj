@@ -17,6 +17,7 @@ export default class WarningScene extends Phaser.Scene {
     });
     makeButton(this, w / 2, h * 0.8, WARNING.button, () => {
       moodAudio.unlock(); // premier geste utilisateur : on peut activer le son
+      moodAudio.ambient();
       this.cameras.main.fadeOut(400, 27, 29, 38);
       this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('Title'));
     });

@@ -134,7 +134,10 @@ export default class MoodManager extends Phaser.Events.EventEmitter {
     }
 
     // --- Son
-    if (this.audio) this.audio.setParams(p);
+    if (this.audio) {
+      this.audio.setMoodValue(this.value);
+      this.audio.setParams(p);
+    }
 
     const s = this.state;
     if (s !== this._lastState) {

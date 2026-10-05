@@ -3,6 +3,7 @@ import { INTERLUDES, INTERLUDE_SPENT } from '../content/content.js';
 import { CONTINUE } from '../content/texts.js';
 import { MODES } from '../config.js';
 import { makeText, COLORS } from '../ui/widgets.js';
+import { moodAudio } from '../audio/MoodAudio.js';
 
 /** Écran de texte bref entre deux niveaux. */
 export default class InterludeScene extends Phaser.Scene {
@@ -43,6 +44,7 @@ export default class InterludeScene extends Phaser.Scene {
       this.input.keyboard.once('keydown', () => this.next());
     });
 
+    moodAudio.ambient(); // la musique s'apaise et s'éloigne entre les niveaux
     this.cameras.main.fadeIn(700, 27, 29, 38);
   }
 

@@ -16,7 +16,7 @@ export default class EndScene extends Phaser.Scene {
   create() {
     const { width: w, height: h } = this.scale;
     const c = END[this.mode];
-    moodAudio.stop();
+    moodAudio.ambient();
     makeText(this, w / 2, h * 0.14, c.title, { fontSize: '32px', color: COLORS.accent });
     makeText(this, w / 2, h * 0.45, c.body.join('\n\n'), { fontSize: '20px', wordWrap: { width: w * 0.76 } });
     makeButton(this, w / 2, h * 0.84, END.compare, () => this.scene.start('Compare', { mode: this.mode }), { width: 320 });

@@ -80,6 +80,9 @@ export default class GameScene extends Phaser.Scene {
     // --- Son
     this.mood.attachAudio(moodAudio);
     moodAudio.start();
+    this.player.on('jump', () => moodAudio.jump());
+    this.player.on('step', () => moodAudio.step());
+    this.player.on('land', (k) => moodAudio.land(k));
 
     // --- Commandes et interface
     this.controls = new Controls(this);
@@ -385,7 +388,7 @@ export default class GameScene extends Phaser.Scene {
   collectCoin(coin) {
     coin.disableBody(true, true);
     this.registry.set('coins', this.registry.get('coins') + 1);
-    moodAudio.blip(880 + Math.random() * 200, 0.08, 'square', 0.12);
+    moodAudio.coin();
   }
 
   openChoice(cb) {
@@ -395,6 +398,7 @@ export default class GameScene extends Phaser.Scene {
     this.player.body.setVelocity(0, 0);
     this.physics.pause();
     const def = CHOICES[cb.key];
+    moodAudio.choiceOpen();
     this.ui.showChoice(def, (yes) => {
       this.paused = false;
       this.physics.resume();
@@ -402,10 +406,11 @@ export default class GameScene extends Phaser.Scene {
       if (yes) {
         if (cb.key === 'spend') this.registry.set('coins', 0);
         this.cameras.main.flash(300, 255, 220, 140);
-        moodAudio.blip(520, 0.4, 'sawtooth', 0.2);
+        moodAudio.choiceYes();
         this.ui.forceThought(def.afterYes);
         this.tweens.add({ targets: [cb.box, cb.glow], alpha: 0, scale: 0, duration: 400 });
       } else {
+        moodAudio.choiceNo();
         this.ui.forceThought(def.afterNo);
         this.tweens.add({ targets: cb.glow, alpha: 0.15, duration: 600 });
         this.tweens.killTweensOf(cb.box);
@@ -423,8 +428,10 @@ export default class GameScene extends Phaser.Scene {
       this.ui.forceThought(CONSEQUENCES.gateClosed);
       g.label.setText(CONSEQUENCES.gateLabel + ' — fermé');
       this.cameras.main.shake(200, 0.004);
+      moodAudio.gateClosed();
     } else {
       this.ui.forceThought(CONSEQUENCES.gateOpen);
+      moodAudio.gateOpen();
       this.physics.world.removeCollider(g.collider);
       g.body.body.enable = false;
       this.tweens.add({ targets: [...g.parts, g.label], alpha: 0, y: '+=20', duration: 800 });
@@ -438,7 +445,7 @@ export default class GameScene extends Phaser.Scene {
     this.registry.set('coins', 0);
     this.ui.forceThought(CONSEQUENCES.lose);
     this.cameras.main.shake(300, 0.006);
-    moodAudio.blip(300, 0.5, 'sawtooth', 0.18);
+    moodAudio.lose();
     const count = Math.min(Math.max(n, 6), 20);
     for (let i = 0; i < count; i++) {
       const c = this.add.sprite(this.player.x, this.player.y - 10, 'tiles', 151).setScale(GAME.scale).setDepth(12);
@@ -468,6 +475,7 @@ export default class GameScene extends Phaser.Scene {
     this.player.facing = 1;
     this.cameras.main.shake(4000, 0.004);
     this.ui.thoughtBurst(6);
+    moodAudio.crisisRise(3);
 
     // le soignant arrive depuis le bord, entre le joueur et le danger
     const spot = this.carerSpot || { x: this.player.x + T * 14, y: this.player.y };
@@ -499,7 +507,7 @@ export default class GameScene extends Phaser.Scene {
     this.cameras.main.resetFX();
     this.cameras.main.flash(500, 255, 255, 255);
     this.ui.clearThoughts();
-    moodAudio.blip(330, 0.8, 'sine', 0.25);
+    moodAudio.hush(MANIC_EXTRAS.crisisCalmDelayMs / 1000);
     const lines = [CARER_LINES.stop, CARER_LINES.help, CARER_LINES.stay];
     lines.forEach((l, i) => this.time.delayedCall(400 + i * 2600, () => this.carer?.say(l, 2300)));
     this.time.delayedCall(MANIC_EXTRAS.crisisCalmDelayMs, () => this.finishLevel());
@@ -522,7 +530,7 @@ export default class GameScene extends Phaser.Scene {
     const x = Math.max(T, cam.worldView.x - 20);
     this.companion = new Companion(this, x, this.player.y - 40, this.player);
     this.physics.add.collider(this.companion, this.layer);
-    moodAudio.blip(440, 0.5, 'sine', 0.2);
+    moodAudio.warmChord();
     lines.forEach((line, i) => this.time.delayedCall(900 + i * 3600, () => this.companion?.say(line)));
     // paroles d'encouragement de temps en temps, quand il aide
     this.time.addEvent({
@@ -546,7 +554,7 @@ export default class GameScene extends Phaser.Scene {
       this.osc.period = S.periodSeconds * Math.pow(S.periodGrowthPerTool, this.toolsCollected);
     }
     this.tweens.add({ targets: [tool.s, tool.glow, tool.label], alpha: 0, y: '-=30', duration: 700 });
-    moodAudio.blip(392, 0.6, 'sine', 0.22);
+    moodAudio.tool();
     this.ui.showToolInfo(TOOLS[tool.kind]);
     if (tool.kind === 'entourage') this.spawnCompanion([COMPANION_LINES.rejoin]);
   }
@@ -555,6 +563,7 @@ export default class GameScene extends Phaser.Scene {
     this.respawning = true;
     const cam = this.cameras.main;
     this.player.frozen = true;
+    moodAudio.respawn();
     cam.fadeOut(200, 27, 29, 38);
     this.time.delayedCall(GAME.respawnDelayMs, () => {
       const r = this.respawnPoint;
@@ -571,7 +580,7 @@ export default class GameScene extends Phaser.Scene {
     if (this.finished) return;
     this.finished = true;
     this.player.frozen = true;
-    moodAudio.blip(523, 0.6, 'triangle', 0.2);
+    moodAudio.flag();
     const cam = this.cameras.main;
     this.time.delayedCall(600, () => {
       cam.fadeOut(1000, 27, 29, 38);

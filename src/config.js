@@ -72,9 +72,23 @@ const STABLE = {
   // --- Son ---------------------------------------------------------------------
   tempo: 84, // BPM de la musique procédurale
   lowpassHz: 9000, // filtre passe-bas (bas = étouffé)
-  musicVolume: 0.32,
+  musicVolume: 0.95,
   noteDensity: 0.55, // probabilité de jouer une note à chaque pas
   hatVolume: 0, // petit charleston (tension)
+  kickVolume: 0.12, // grosse caisse (temps 1 et 3 ; 4 temps si > 0,35)
+  heartbeat: 0, // battement de cœur sourd (« boum-boum » à chaque mesure)
+  padVolume: 0.5, // nappe d'accords
+  arpVolume: 0.5, // arpège / mélodie
+  bassVolume: 0.5,
+  pump: 0, // effet de « pompe » rythmique sur la musique (0..1)
+  distortion: 0, // saturation (0..1)
+  crush: 0, // grain numérique, son abîmé (0..1)
+  wobble: 0, // bande qui ondule : variation de hauteur en cents
+  pitchShift: 0, // transposition globale en demi-tons (négatif = ralenti, grave)
+  reverb: 0.2, // réverbération (0..1)
+  noiseVolume: 0, // souffle de fond
+  tinnitus: 0, // sifflement aigu (saturation sensorielle)
+  sfxVolume: 0.6, // volume des bruitages
 
   // --- Pensées -------------------------------------------------------------------
   thoughtIntervalMs: 9000, // temps moyen entre deux pensées
@@ -121,9 +135,23 @@ const MANIC = {
 
   tempo: 160,
   lowpassHz: 14000,
-  musicVolume: 0.38,
+  musicVolume: 0.75,
   noteDensity: 0.97,
   hatVolume: 0.14,
+  kickVolume: 0.5,
+  heartbeat: 0,
+  padVolume: 0.35,
+  arpVolume: 0.75,
+  bassVolume: 0.6,
+  pump: 0.6,
+  distortion: 0.22, // son qui « crache » un peu : trop fort, trop vite
+  crush: 0,
+  wobble: 0,
+  pitchShift: 1, // tout est un peu trop haut
+  reverb: 0.06,
+  noiseVolume: 0,
+  tinnitus: 0.035,
+  sfxVolume: 0.75,
 
   thoughtIntervalMs: 750,
   thoughtLifeMs: 1600,
@@ -167,11 +195,25 @@ const HYPOMANIC = {
   cameraZoom: 1,
   cameraZoomPulse: 0.004,
 
-  tempo: 108,
-  lowpassHz: 11000,
-  musicVolume: 0.34,
-  noteDensity: 0.75,
-  hatVolume: 0.03,
+  tempo: 112,
+  lowpassHz: 12000,
+  musicVolume: 0.85,
+  noteDensity: 0.78,
+  hatVolume: 0.05,
+  kickVolume: 0.3,
+  heartbeat: 0,
+  padVolume: 0.5,
+  arpVolume: 0.65,
+  bassVolume: 0.55,
+  pump: 0.2,
+  distortion: 0,
+  crush: 0,
+  wobble: 0,
+  pitchShift: 0,
+  reverb: 0.16,
+  noiseVolume: 0,
+  tinnitus: 0,
+  sfxVolume: 0.65,
 
   thoughtIntervalMs: 5500,
   thoughtLifeMs: 3200,
@@ -213,11 +255,25 @@ const DEPRESSIVE = {
   cameraZoom: 1.1,
   cameraZoomPulse: 0,
 
-  tempo: 58,
-  lowpassHz: 650,
-  musicVolume: 0.26,
-  noteDensity: 0.22,
+  tempo: 50, // lent, traînant
+  lowpassHz: 900,
+  musicVolume: 0.22,
+  noteDensity: 0.25,
   hatVolume: 0,
+  kickVolume: 0,
+  heartbeat: 0.35,
+  padVolume: 0.75,
+  arpVolume: 0.35,
+  bassVolume: 0.7,
+  pump: 0,
+  distortion: 0.5, // son saturé, sale
+  crush: 0.35, // grain abîmé, comme une vieille cassette
+  wobble: 28, // la bande ondule, la musique « tangue »
+  pitchShift: -3, // ralentie, plus grave
+  reverb: 0.55, // tout est lointain
+  noiseVolume: 0.05,
+  tinnitus: 0,
+  sfxVolume: 0.45,
 
   thoughtIntervalMs: 7000,
   thoughtLifeMs: 6500,
@@ -273,6 +329,16 @@ export const STABILISATION = {
   upScale: 1, // échelle des pics hauts (< 1 : les hauts sont plus discrets que les bas)
 };
 
+// -----------------------------------------------------------------------------
+//  Son (global). Le reste est dans les profils d'humeur ci-dessus.
+// -----------------------------------------------------------------------------
+export const AUDIO = {
+  masterVolume: 0.9,
+  // ambiance des menus et écrans de texte (surcharge le profil STABLE)
+  menu: { tempo: 66, noteDensity: 0.3, lowpassHz: 2600, kickVolume: 0, hatVolume: 0, reverb: 0.45, musicVolume: 0.6 },
+  wobbleRateHz: 0.35, // vitesse d'ondulation de la bande
+};
+
 // Couleurs de la jauge d'humeur
 export const GAUGE = {
   width: 180,
@@ -316,7 +382,7 @@ export const MODES = {
     gaugeHighColor: 0xc9c27a, // le haut de la jauge se remarque à peine
     profileOverrides: {
       // dépression plus lente et plus lourde encore : elle domine le type 2
-      DEPRESSIVE: { moveSpeed: 82, acceleration: 360, inputDelayMs: 220, tempo: 52 },
+      DEPRESSIVE: { moveSpeed: 82, acceleration: 360, inputDelayMs: 220, tempo: 46, wobble: 34, pitchShift: -4 },
     },
     // pics hauts discrets, centre légèrement bas
     stabilisation: { baseMood: -0.1, startAmplitude: 0.75, upScale: 0.55 },

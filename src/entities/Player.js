@@ -22,6 +22,9 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.lastJumpPress = -9999;
     this.jumping = false;
     this.frozen = false;
+    this.wasGrounded = true;
+    this.stepDist = 0;
+    this.fallSpeed = 0;
   }
 
   update(time, dt, input, p) {
@@ -32,6 +35,17 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
       return;
     }
     const onGround = body.blocked.down || body.touching.down;
+    // bruitages : atterrissage et pas
+    if (onGround && !this.wasGrounded && this.fallSpeed > 250) this.emit('land', Math.min(1, this.fallSpeed / 900));
+    this.wasGrounded = onGround;
+    this.fallSpeed = body.velocity.y;
+    if (onGround && Math.abs(body.velocity.x) > 20) {
+      this.stepDist += Math.abs(body.velocity.x) * dt;
+      if (this.stepDist > 30) {
+        this.stepDist = 0;
+        this.emit('step');
+      }
+    }
     if (onGround) {
       this.lastGrounded = time;
       this.jumping = false;

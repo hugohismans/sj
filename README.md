@@ -43,6 +43,10 @@ Tout est dans **`src/config.js`** :
 - `COMPANION` : force de l'aide du proche (saut, vitesse, retard réduit).
 - `MANIC_EXTRAS` : aimant des objets brillants, conséquences, crise maniaque.
 - `STABILISATION` : amplitude/période de l'oscillation et effet de chaque outil.
+- Son, dans chaque profil : tempo, filtre, saturation (`distortion`), grain
+  (`crush`), bande qui ondule (`wobble`), transposition (`pitchShift`),
+  réverbération, battement de cœur, « pompe » rythmique… `AUDIO` règle le volume
+  général et l'ambiance des menus.
 
 L'humeur est une valeur continue de -1 (dépressif) à +1 (maniaque) : chaque
 paramètre est interpolé entre les profils, les transitions sont donc progressives.
@@ -61,7 +65,7 @@ src/
   config.js              réglages de gameplay par état d'humeur
   main.js                configuration Phaser (FIT, paysage, multi-touch)
   mood/MoodManager.js    humeur courante, interpolation, effets (post-FX, caméra, son)
-  audio/MoodAudio.js     musique générative WebAudio (tempo, filtre, densité)
+  audio/MoodAudio.js     musique générative + bruitages WebAudio, pilotés par l'humeur
   input/Controls.js      clavier + tactile, retard d'input configurable
   entities/Player.js     déplacement piloté par mood.params
   entities/Companion.js  proche/soignant : suit et soutient

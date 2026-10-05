@@ -241,6 +241,7 @@ export default class UIScene extends Phaser.Scene {
 
   /** Bulles rapides, envahissantes, un peu partout. */
   spawnManicThought(text, p) {
+    moodAudio.thoughtPop();
     const { w, h } = this;
     const x = Phaser.Math.Between(w * 0.18, w * 0.82);
     const y = Phaser.Math.Between(h * 0.14, h * 0.62);
@@ -279,6 +280,7 @@ export default class UIScene extends Phaser.Scene {
   spawnCalmThought(text, p, v) {
     const { w, h } = this;
     const heavy = v < -0.4;
+    if (heavy) moodAudio.thoughtHeavy();
     const warm = v > 0.4; // hypomanie : pensées agréables, couleur chaude
     const t = this.add.text(w / 2, h * 0.27, '', {
       fontFamily: FONT,

@@ -39,6 +39,7 @@ export default class TitleScene extends Phaser.Scene {
 
     this.input.keyboard.once('keydown-ONE', () => this.startMode('type1'));
     this.input.keyboard.once('keydown-TWO', () => this.startMode('type2'));
+    moodAudio.ambient(); // ne joue qu'une fois le son débloqué par un geste
     this.cameras.main.fadeIn(500, 27, 29, 38);
   }
 
