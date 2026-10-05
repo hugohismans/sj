@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#1b1d26" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <title>Entre deux pôles</title>
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        background: #1b1d26;
+        overflow: hidden;
+        touch-action: none;
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-touch-callout: none;
+      }
+      #game {
+        position: fixed;
+        inset: 0;
+      }
+      #rotate {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 10;
+        background: #1b1d26;
+        color: #e8e6e1;
+        font-family: system-ui, sans-serif;
+        font-size: 18px;
+        text-align: center;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        box-sizing: border-box;
+        line-height: 1.5;
+      }
+      #rotate .icon {
+        font-size: 48px;
+        display: block;
+        margin-bottom: 12px;
+      }
+      /* Mobile-first : on demande le mode paysage sur les petits écrans en portrait */
+      @media (orientation: portrait) and (max-width: 900px) {
+        #rotate { display: flex; }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="game"></div>
+    <div id="rotate">
+      <div><span class="icon">⟳</span>Tournez votre appareil en mode paysage.</div>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
